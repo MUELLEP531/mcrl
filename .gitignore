@@ -1,0 +1,6 @@
+build*/
+out/
+.vs/
+__pycache__/
+*.pyc
+/tools/preview/out/
