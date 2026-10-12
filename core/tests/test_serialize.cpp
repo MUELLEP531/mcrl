@@ -496,18 +496,19 @@ TEST(serialize_save_to_failed_stream_throws)
 	CHECK(throwsRuntimeError([&] { vox::saveWorld(w, reg, bad); }));
 }
 
-TEST(serialize_save_rejects_overlong_names)
+TEST(serialize_save_handles_the_longest_names)
 {
+	// the registry refuses names over 1024 bytes (the format's limit), so every registered name can be saved
 	BlockRegistry reg;
-	reg.add(named(std::string(1025, 'a')));
+	CHECK_THROWS(reg.add(named(std::string(1025, 'a'))));
 	reg.add(named(std::string(1024, 'b')));
 	World w(kTiny);
-	w.set({1, 2, 3}, 2);
-	CHECK(!save(w, reg).empty()); // 1024 bytes is the limit
-	w.set({2, 2, 3}, 1);
-	std::ostringstream out(std::ios::binary);
-	CHECK(throwsRuntimeError([&] { vox::saveWorld(w, reg, out); }));
-	CHECK(out.str().empty()); // nothing written
+	w.set({1, 2, 3}, 1);
+	const std::string bytes = save(w, reg);
+	CHECK(!bytes.empty());
+	std::istringstream in(bytes, std::ios::binary);
+	const World back = vox::loadWorld(in, reg, kTiny);
+	CHECK_EQ(back.get({1, 2, 3}), 1);
 }
 
 // ---- loading errors ----

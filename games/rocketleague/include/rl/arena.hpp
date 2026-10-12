@@ -49,8 +49,13 @@ struct ArenaOptions
 {
 	ArenaMapping mapping;
 	SoccarDimensions dims;
-	/// The block placed in shell cells: solid, invisible, breakable (digging it makes the cell Dug).
+	/// The block placed in shell cells where shellTakesGround gives none: solid, invisible, breakable (the barrier).
+	/// Digging a shell cell makes it Dug, whatever it holds.
 	vox::BlockId shellBlock = vox::kAir;
+	/// Shell cells hold the block an outside cell at the same height would (the ground under RL's floor), so a hole
+	/// dug into RL's surface shows walls of that material; the shader hides blocks in shell cells everywhere else.
+	/// Where that block is air or not solid, they hold shellBlock. False: every shell cell holds shellBlock.
+	bool shellTakesGround = true;
 	/// Cells outside the arena below the floor's level: the top `topsoilDepth` layers get `topsoilBlock`, the rest
 	/// `groundBlock`. kAir leaves them empty.
 	vox::BlockId topsoilBlock = vox::kAir;
@@ -61,11 +66,17 @@ struct ArenaOptions
 };
 
 /// Rebuilds the whole world as the arena: every cell is classified by testing insideSoccar() at its 8 corners.
-/// All corners inside: open air inside the arena. Some inside and some outside: a Shell cell holding shellBlock.
-/// None inside: outside the arena (ground or outsideBlock). So a surface exactly on a cell boundary puts the shell in
-/// the cell behind it (the floor at y = floorY gives shell cells at y = floorY - 1), as the shader expects.
-/// Every cell's state is reset first (Dug cells become Shell again). Throws std::invalid_argument if shellBlock is
-/// air or not in `registry`, or a ground block is not in `registry`.
+/// All corners inside: open air inside the arena. Some inside and some outside: a Shell cell (holding the ground or
+/// shellBlock, see shellTakesGround). None inside: outside the arena (ground or outsideBlock). So a surface exactly
+/// on a cell boundary puts the shell in the cell behind it (the floor at y = floorY gives shell cells at
+/// y = floorY - 1), as the shader expects.
+/// Every cell's state is reset first (Dug cells become Shell again). Installs everything with World::assign, so
+/// readers of the change journal resync and the whole world is dirty. Throws std::invalid_argument (leaving the
+/// world unchanged) if shellBlock is air or not in `registry`, topsoilBlock / groundBlock / outsideBlock is not in
+/// `registry`, topsoilDepth is negative, mapping.uuPerBlock is not positive and finite or mapping.floorY not finite.
+/// The floor's level is the layer L = floor(floorY): outside cells with y >= L get outsideBlock, the topsoilDepth
+/// layers below L get topsoilBlock (with an integer floorY that includes the floor's own shell layer, so the ground
+/// is level with RL's floor), and everything lower groundBlock.
 void buildSoccarArena(vox::World& world, const vox::BlockRegistry& registry, const ArenaOptions& options);
 
 } // namespace rl

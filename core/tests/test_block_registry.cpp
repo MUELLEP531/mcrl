@@ -117,3 +117,27 @@ TEST(registry_parse_rejects_malformed_lines)
 }
 
 TEST(registry_load_missing_file_throws) { CHECK_THROWS(BlockRegistry::loadFile("/nonexistent/mcrl_blocks.txt")); }
+
+TEST(registry_name_length_limit)
+{
+	BlockRegistry r;
+	BlockType t;
+	t.name = std::string(BlockRegistry::kMaxNameLength, 'a');
+	CHECK_EQ(r.add(t), 1);
+	t.name += 'a';
+	CHECK_THROWS(r.add(t));
+}
+
+TEST(registry_find_after_many_adds)
+{
+	BlockRegistry r;
+	for (int i = 0; i < 1000; ++i)
+	{
+		BlockType t;
+		t.name = "block_" + std::to_string(i);
+		r.add(t);
+	}
+	CHECK(r.find("block_0") == std::optional<vox::BlockId>(1));
+	CHECK(r.find("block_999") == std::optional<vox::BlockId>(1000));
+	CHECK(!r.find("block_1000"));
+}

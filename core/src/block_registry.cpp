@@ -95,6 +95,7 @@ BlockRegistry::BlockRegistry()
 	air.visible = false;
 	air.breakable = false;
 	air.color = Rgb{0, 0, 0};
+	byName_.emplace(air.name, kAir);
 	types_.push_back(air);
 }
 
@@ -102,14 +103,18 @@ BlockId BlockRegistry::add(BlockType type)
 {
 	if (!validName(type.name))
 		throw std::invalid_argument("block name must be non-empty with no whitespace or '#': '" + type.name + "'");
+	if (type.name.size() > kMaxNameLength)
+		throw std::invalid_argument("block name longer than 1024 bytes");
 	if (find(type.name))
 		throw std::invalid_argument("block name already registered: " + type.name);
 	if (!validSlot(type.texTop) || !validSlot(type.texSide) || !validSlot(type.texBottom))
 		throw std::invalid_argument("atlas slot out of range (-1..4095) for block " + type.name);
 	if (types_.size() >= kMaxBlocks)
 		throw std::invalid_argument("block registry is full");
+	const BlockId id = static_cast<BlockId>(types_.size());
+	byName_.emplace(type.name, id);
 	types_.push_back(std::move(type));
-	return static_cast<BlockId>(types_.size() - 1);
+	return id;
 }
 
 const BlockType& BlockRegistry::get(BlockId id) const
@@ -121,10 +126,10 @@ const BlockType& BlockRegistry::get(BlockId id) const
 
 std::optional<BlockId> BlockRegistry::find(std::string_view name) const
 {
-	for (std::size_t i = 0; i < types_.size(); ++i)
-		if (types_[i].name == name)
-			return static_cast<BlockId>(i);
-	return std::nullopt;
+	const auto it = byName_.find(std::string(name));
+	if (it == byName_.end())
+		return std::nullopt;
+	return it->second;
 }
 
 BlockRegistry BlockRegistry::parse(std::istream& in)

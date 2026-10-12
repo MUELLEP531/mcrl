@@ -21,13 +21,15 @@ struct LoadReport
 };
 
 /// Writes `world` in the binary format "MCRLVOX1" (little-endian: magic, grid origin and size, the names of the
-/// block types used, then run-length-encoded blocks and cell states in storage order). Throws std::runtime_error if
-/// the stream fails.
+/// block types used, run-length-encoded blocks and cell states in storage order, then a CRC-32 of everything before
+/// it; serialize.cpp documents every field). Ids the registry doesn't know are saved as air. Throws
+/// std::runtime_error if the stream fails or a block name is longer than 1024 bytes (nothing is written then).
 void saveWorld(const World& world, const BlockRegistry& registry, std::ostream& out);
 
-/// Reads a world written by saveWorld. The grid in the file must match `spec`. Throws std::runtime_error on a bad
-/// magic, a grid mismatch, truncated or corrupt data (runs that overflow the grid, out-of-range palette indices or
-/// cell states). Open streams in binary mode.
+/// Reads one world written by saveWorld (bytes after it are left in the stream). The grid in the file must match
+/// `spec`. Throws std::runtime_error on a bad magic, a grid mismatch, truncated or corrupt data (runs that overflow
+/// the grid, out-of-range palette indices or cell states, duplicate palette names, a CRC mismatch), and
+/// std::invalid_argument for an invalid `spec`. `report` is filled only on success. Open streams in binary mode.
 World loadWorld(std::istream& in, const BlockRegistry& registry, GridSpec spec = {}, LoadReport* report = nullptr);
 
 } // namespace vox

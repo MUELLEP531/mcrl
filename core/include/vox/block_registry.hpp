@@ -8,6 +8,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 namespace vox {
@@ -35,7 +36,8 @@ struct BlockType
 	/// Faces multiplied by `tint` (TintFace bits): grass tops, leaves.
 	std::uint8_t tintFaces = 0;
 	Rgb tint{255, 255, 255};
-	/// The block's own colour, for faces without a texture.
+	/// The block's own colour, for faces without a texture. Untinted: the shader multiplies `tint` into it on tinted
+	/// faces, as it does for textures.
 	Rgb color{128, 128, 128};
 };
 
@@ -47,12 +49,15 @@ public:
 	static constexpr std::size_t kMaxBlocks = 32768;
 	/// The atlas holds 64 x 64 slots.
 	static constexpr int kAtlasSlots = 4096;
+	/// Longest block name, in bytes (the save format's limit).
+	static constexpr std::size_t kMaxNameLength = 1024;
 
 	/// A registry holding only air.
 	BlockRegistry();
 
-	/// Adds a type and returns its id (the next free one). Throws std::invalid_argument if the name is empty, contains
-	/// whitespace or is taken, if an atlas slot is outside -1..4095, or if the registry is full.
+	/// Adds a type and returns its id (the next free one). Throws std::invalid_argument if the name is empty, longer
+	/// than kMaxNameLength, contains whitespace or '#' or is taken, if an atlas slot is outside -1..4095, or if the
+	/// registry is full.
 	BlockId add(BlockType type);
 
 	/// The type of `id`; throws std::out_of_range for an id that was never added.
@@ -78,6 +83,7 @@ public:
 
 private:
 	std::vector<BlockType> types_;
+	std::unordered_map<std::string, BlockId> byName_;
 };
 
 } // namespace vox

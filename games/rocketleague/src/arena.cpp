@@ -11,7 +11,8 @@
 // (behind the walls, above the ceiling); cells L - topsoilDepth <= y < L get topsoilBlock; cells y < L - topsoilDepth
 // get groundBlock. With an integer floorY (the default 64) the top topsoil layer is the floor's own shell layer
 // (y = floorY - 1): under the pitch it is shell, around the arena it is topsoil, so the ground continues level with
-// RL's floor. All of this is decided by y alone; shell and open cells never hold ground.
+// RL's floor. All of this is decided by y alone. Shell cells hold their layer's ground too when it is solid
+// (shellTakesGround), else shellBlock; open cells are always air.
 
 namespace rl {
 
@@ -111,6 +112,16 @@ void buildSoccarArena(vox::World& world, const vox::BlockRegistry& registry, con
 			: (y >= topsoilBottom ? options.topsoilBlock : options.groundBlock);
 	}
 
+	// Shell cells take the solid ground of their layer (so a dug hole has walls), else the barrier.
+	std::vector<vox::BlockId> shellByLayer(sy, options.shellBlock);
+	if (options.shellTakesGround)
+		for (std::size_t j = 0; j < sy; ++j)
+		{
+			const vox::BlockId ground = outsideByLayer[j];
+			if (ground != vox::kAir && registry.get(ground).solid)
+				shellByLayer[j] = ground;
+		}
+
 	// Fresh vectors (every cell's state reset, Dug included), installed at once: World::assign makes readers resync.
 	const std::size_t count = sx * sy * sz;
 	std::vector<vox::BlockId> blocks(count, vox::kAir);
@@ -128,7 +139,7 @@ void buildSoccarArena(vox::World& world, const vox::BlockRegistry& registry, con
 					continue; // open air inside the arena
 				if (inside > 0)
 				{
-					blocks[index] = options.shellBlock;
+					blocks[index] = shellByLayer[j];
 					cells[index] = vox::CellState::Shell;
 				}
 				else

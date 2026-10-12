@@ -80,3 +80,23 @@ Everything below is taken from the shader source; where the shader leaves someth
 - The scale and axes between RL units and Minecraft blocks, and where RL's floor is in Minecraft's `y`. The plugin
   already converts RL's camera into `HostCamRow*` / `HostCamPos`; the arena generator in
   `games/rocketleague` takes the same mapping as a parameter and must be set to match it.
+
+## Known issues in the shader
+
+Found while porting the voxel path to Python for `tools/preview` (the preview copies the shader as written):
+
+- **Steve's head pitch looks inverted.** `trace_steve` turns the head by `xRot = -headPitch`; with `SteveLook.z` in
+  Minecraft's convention (positive looks down) that tilts his head up in the shader's y-up model frame. The arms and
+  legs use Minecraft's own signs. Fix it in the shader (`+headPitch`) or negate the pitch the add-on sends; decide when
+  the effect is in this repo.
+- **Exact ties in the grid walk** step z before y before x (`trace_voxels`), the opposite of `vox::raycast`. Only rays
+  through an exact edge or corner differ, which camera rays practically never are.
+
+## Notes for the plugin
+
+- Atlas names are now VoxeLibre file names (`default_stone`, `mcl_core_grass_block_top`, generated ones `mcrl_...`),
+  not the friend kit's `minecraft:block/...`; the shader doesn't read them, but anything in the plugin that looked
+  textures up by name must use the new ones.
+- Shell cells under RL's floor hold visible ground (dirt) rather than the invisible barrier (`rl::ArenaOptions::
+  shellTakesGround`): the shader hides blocks in shell cells unless the pixel looks into a hole, and this gives a dug
+  hole real walls. Walls and the ceiling keep the barrier while nothing solid is outside them.

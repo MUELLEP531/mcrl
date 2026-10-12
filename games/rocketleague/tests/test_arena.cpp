@@ -1,6 +1,7 @@
 #include "check.hpp"
 
 #include "rl/arena.hpp"
+#include "vox/edit.hpp"
 
 #include <cmath>
 #include <cstddef>
@@ -54,10 +55,12 @@ ArenaOptions shellOnly(const Blocks& b)
 	return o;
 }
 
+/// Every shell cell holds the barrier (shellTakesGround off), so isShell() can check the block.
 ArenaOptions layered(const Blocks& b)
 {
 	ArenaOptions o;
 	o.shellBlock = b.barrier;
+	o.shellTakesGround = false;
 	o.topsoilBlock = b.dirt;
 	o.groundBlock = b.stone;
 	o.outsideBlock = b.glass;
@@ -828,4 +831,76 @@ TEST(arena_build_throws_invalid_argument)
 		caught = true;
 	}
 	CHECK(caught);
+}
+
+TEST(arena_shell_takes_ground_under_the_floor)
+{
+	// default: shell cells hold their layer's solid ground, so a hole dug into RL's floor has dirt walls
+	const Blocks b = makeBlocks();
+	ArenaOptions o = layered(b);
+	o.shellTakesGround = true;
+	o.outsideBlock = vox::kAir;
+	World w;
+	rl::buildSoccarArena(w, b.registry, o);
+	CHECK(w.cell({0, 63, 0}) == CellState::Shell);
+	CHECK_EQ(w.get({0, 63, 0}), b.dirt);     // the floor's shell: topsoil
+	CHECK(isOpen(w, {0, 64, 0}));
+	CHECK(w.cell({40, 70, 0}) == CellState::Shell);
+	CHECK_EQ(w.get({40, 70, 0}), b.barrier); // side wall above the floor: outside is air, so the barrier
+	CHECK(w.cell({0, 84, 0}) == CellState::Shell);
+	CHECK_EQ(w.get({0, 84, 0}), b.barrier);  // ceiling
+	// every shell cell is solid either way
+	std::size_t shells = 0, solidShells = 0;
+	for (std::size_t i = 0; i < w.cells().size(); ++i)
+		if (w.cells()[i] == CellState::Shell)
+		{
+			++shells;
+			solidShells += b.registry.get(w.blocks()[i]).solid ? 1u : 0u;
+		}
+	CHECK_EQ(shells, static_cast<std::size_t>(24752));
+	CHECK_EQ(solidShells, shells);
+}
+
+TEST(arena_shell_takes_solid_outside_block)
+{
+	const Blocks b = makeBlocks();
+	ArenaOptions o = layered(b);
+	o.shellTakesGround = true; // outsideBlock is glass (solid in this registry)
+	World w;
+	rl::buildSoccarArena(w, b.registry, o);
+	CHECK_EQ(w.get({40, 70, 0}), b.glass);
+	CHECK_EQ(w.get({0, 84, 0}), b.glass);
+	CHECK_EQ(w.get({0, 63, 0}), b.dirt);
+	CHECK_EQ(countBlock(w, b.barrier), static_cast<std::size_t>(0));
+}
+
+TEST(arena_shell_skips_non_solid_ground)
+{
+	Blocks b = makeBlocks();
+	vox::BlockType fog;
+	fog.name = "fog";
+	fog.solid = false;
+	const BlockId fogId = b.registry.add(fog);
+	ArenaOptions o = layered(b);
+	o.shellTakesGround = true;
+	o.topsoilBlock = fogId; // not solid: the floor's shell must stay walkable
+	o.outsideBlock = vox::kAir;
+	World w;
+	rl::buildSoccarArena(w, b.registry, o);
+	CHECK_EQ(w.get({0, 63, 0}), b.barrier);
+	CHECK_EQ(w.get({50, 63, 0}), fogId); // outside cells still get the layer's block
+	CHECK_EQ(w.get({0, 60, 0}), b.stone);
+}
+
+TEST(arena_shell_takes_ground_breaks_to_dug)
+{
+	const Blocks b = makeBlocks();
+	ArenaOptions o = layered(b);
+	o.shellTakesGround = true;
+	World w;
+	rl::buildSoccarArena(w, b.registry, o);
+	REQUIRE(vox::breakBlock(w, b.registry, {0, 63, 0}) == vox::EditResult::Ok);
+	CHECK(w.cell({0, 63, 0}) == CellState::Dug);
+	CHECK_EQ(w.get({0, 63, 0}), vox::kAir);
+	CHECK_EQ(w.get({1, 63, 0}), b.dirt); // the hole's wall
 }

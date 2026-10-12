@@ -22,17 +22,26 @@ enum class EditResult
 	InvalidBlock,    ///< placing air or an id the registry doesn't have
 };
 
-/// Breaks the block at `cell` (sets it to air). Breaking a block in a Shell cell digs it: the cell becomes Dug.
+/// Breaks the block at `cell` (sets it to air). Breaking a block in a Shell cell digs it: the cell becomes Dug; Open
+/// and Dug cells keep their state. Checks in order: OutOfBounds, then Unbreakable (air or breakable = false). An id the
+/// registry doesn't know (a save from another block list) is breakable, so nothing is stuck forever.
 EditResult breakBlock(World& world, const BlockRegistry& registry, Int3 cell);
 
 /// Places `block` against the face `hit` points at (into hit.cell + hit.normal). A hit with a zero normal (the ray
 /// started inside the block) places nothing (NoTarget). The target must be inside the grid and air; a solid block must
-/// not overlap any of `entities` (touching faces don't count). Placing into a Dug cell is allowed and leaves it Dug.
+/// not overlap any of `entities` (their open intervals overlap on every axis: touching faces, flat, inverted or NaN
+/// boxes don't block); non-solid blocks ignore entities. Checks in order: NoTarget, OutOfBounds, Occupied,
+/// InvalidBlock, BlockedByEntity. The cell's state is left alone: placing into a Dug cell leaves it Dug (the block
+/// shows in the hole); a Shell cell would stay Shell (hidden behind the host's surface).
 EditResult placeBlock(World& world, const BlockRegistry& registry, const RayHit& hit, BlockId block,
 	const std::vector<Aabb>& entities = {});
 
-/// Turns held mouse buttons into breaks and places at Minecraft's creative-mode pace, one tick at a time (20 ticks per
-/// second): pressing acts at once, holding repeats every `breakRepeatTicks` / `placeRepeatTicks`.
+/// Turns held mouse buttons into breaks and places at Minecraft's creative-mode pace, one tick at a time: the caller
+/// must call tick() at a steady 20 Hz. Pressing acts at once, holding repeats every `breakRepeatTicks` /
+/// `placeRepeatTicks` after a successful action (a failed attempt retries on the next tick). While attack is held, use
+/// does nothing; its own countdown keeps running, so a held use acts once attack is released and its countdown is up.
+/// It knows nothing about the player's body: pass the player's own box in `entities`, or they can place a block into
+/// the cell they stand in.
 class Interactor
 {
 public:
