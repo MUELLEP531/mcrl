@@ -19,7 +19,8 @@ Minecraft, built so the same core can be dropped into other games.
      (`rl::buildSoccarArena`), the asset pipeline, and an offline preview (`tools/preview`) that renders the exported data
      with a port of the shader's voxel path.
    - Left: in the plugin, fill `MCVOX` / `MCHOLES` / `MCTYPES` from the core instead of from Minecraft's stream, and set
-     `VoxActive`. Needs the plugin source (`MCBridge.cpp`, `compositor.cpp`) in this repo.
+     `VoxActive` (plus `WarpTan` and `HostPlanes` in blocks, see the contract). Install `assets/` into
+     `reshade-shaders\Textures`. Needs the plugin source (`MCBridge.cpp`, `compositor.cpp`) in this repo.
 2. **Place and break from the car's camera.**
    - Done here: `vox::raycast`, `vox::breakBlock` / `vox::placeBlock`, `vox::Interactor` (Minecraft creative timing).
    - Left: feed it RL's camera and mouse buttons in the plugin; upload dirty rectangles each frame.
@@ -27,7 +28,9 @@ Minecraft, built so the same core can be dropped into other games.
    camera hook (behind its cvar); a hotbar overlay (the shader's overlay is off in voxel mode, so it needs a new one).
 4. **Items:** sword, bow, TNT (the plugin already has melee / projectile / explosion messages to build on).
 5. **Sounds and polish:** VoxeLibre's sounds (CC BY-SA) through the plugin.
-6. **The friend's PC:** stream the world (`World::changesSince` journal) the way the kit already receives it.
+6. **The friend's PC:** stream the world (`World::changesSince` journal, keyed by `World::epoch`) the way the kit
+   already receives it. The kit's installer must copy `assets/` (atlas, atlas names, skin, block list) instead of
+   running `build_atlas.ps1`: slots in `mcrl_blocks.txt` only match the atlas they were built with.
 
 ## Open questions
 
