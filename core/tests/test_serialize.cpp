@@ -214,6 +214,7 @@ World built()
 		for (int z = -2; z <= 2; ++z)
 			w.setCell({x, 63, z}, CellState::Dug);
 	w.setCell({63, 87, 63}, CellState::Dug);
+	w.setCell({62, 87, 63}, CellState::Backing);
 	return w;
 }
 
@@ -671,7 +672,8 @@ TEST(serialize_rejects_bad_cell_runs)
 	CHECK(loadFails(file(13, 0, 0, 0), reg, kTiny)); // past the grid
 	CHECK(loadFails(file(4, 1, 9, 2), reg, kTiny));
 	CHECK(loadFails(file(0xffffffffu, 1, 0, 0), reg, kTiny));
-	CHECK(loadFails(file(4, 3, 8, 2), reg, kTiny)); // state 3
+	CHECK(!loadFails(file(4, 3, 8, 2), reg, kTiny)); // state 3 is Backing
+	CHECK(loadFails(file(4, 4, 8, 2), reg, kTiny));  // state 4
 	CHECK(loadFails(file(4, 1, 8, 255), reg, kTiny));
 }
 

@@ -18,14 +18,14 @@
 //                       2  palette index (uint16, < P)
 //     ...     ...   cell-state runs, the same way:
 //                       4  count (uint32, 1..cells still to cover)
-//                       1  state (uint8: 0 open, 1 shell, 2 dug)
+//                       1  state (uint8: 0 open, 1 shell, 2 dug, 3 backing)
 //     ...     4     CRC-32 (IEEE 802.3 / zlib, uint32) of every byte before it, from the magic on
 //
 // Runs go through the cells in storage order (World::indexOf: x fastest, then z, then y), which is the GPU layout.
 // A run never spans more than 2^32 - 1 cells (longer ones are split).
 //
 // Saving: the palette holds only the names of the types the world uses, in id order. Ids the registry doesn't have
-// are saved as air, and cell states other than open / shell / dug as open. A used name longer than kMaxNameBytes
+// are saved as air, and cell states other than open / shell / dug / backing as open. A used name longer than kMaxNameBytes
 // cannot be saved (std::runtime_error, nothing written).
 //
 // Loading: names map to ids through the registry by name ("air" always to air); names it doesn't have load as air and
@@ -60,7 +60,7 @@ constexpr std::uint32_t kMaxPalette = static_cast<std::uint32_t>(BlockRegistry::
 /// Far longer than any real block name, short enough that a hostile palette stays small.
 constexpr std::size_t kMaxNameBytes = 1024;
 constexpr std::uint32_t kMaxRun = 0xffffffffu;
-constexpr std::uint8_t kStateCount = 3;
+constexpr std::uint8_t kStateCount = 4;
 
 [[noreturn]] void corrupt(const std::string& why) { throw std::runtime_error("MCRLVOX1: " + why); }
 

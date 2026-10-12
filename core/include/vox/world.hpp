@@ -27,6 +27,10 @@ enum class CellState : std::uint8_t
 	Open = 0,  ///< not part of the host game's geometry
 	Shell = 1, ///< contains the host game's surface (a wall, the floor): blocks here are behind that surface
 	Dug = 2,   ///< a shell cell that was broken open: the host's surface is gone here
+	/// Just behind the host's surface, closer to it than the shader's depth bias, without containing it: exported as
+	/// shell, so blocks here stay hidden behind the intact surface, but breaking a block here never makes it Dug
+	/// (that would open the surface in front of it). A hole through the Shell cell in front still shows it.
+	Backing = 3,
 };
 
 /// One block change, for network sync.

@@ -22,8 +22,8 @@ enum class EditResult
 	InvalidBlock,    ///< placing air or an id the registry doesn't have
 };
 
-/// Breaks the block at `cell` (sets it to air). Breaking a block in a Shell cell digs it: the cell becomes Dug; Open
-/// and Dug cells keep their state. Checks in order: OutOfBounds, then Unbreakable (air or breakable = false). An id the
+/// Breaks the block at `cell` (sets it to air). Breaking a block in a Shell cell digs it: the cell becomes Dug; Open,
+/// Dug and Backing cells keep their state. Checks in order: OutOfBounds, then Unbreakable (air or breakable = false). An id the
 /// registry doesn't know (a save from another block list) is breakable, so nothing is stuck forever.
 EditResult breakBlock(World& world, const BlockRegistry& registry, Int3 cell);
 

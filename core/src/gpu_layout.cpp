@@ -6,7 +6,8 @@
 #include <vector>
 
 // Notes on behaviour the header leaves implicit:
-// - A CellState outside Open / Shell / Dug (only reachable through a cast) is exported as open (0).
+// - Backing exports as shell (120). A CellState outside the four (only reachable through a cast) is exported as
+//   open (0).
 // - exportVoxelRect / exportCellRect throw std::invalid_argument if `rect` is inverted (x1 < x0 or row1 < row0) or
 //   reaches outside the texture (size.x wide, size.z * size.y high); `out` is then left unchanged.
 // - exportTypes writes real rows for every registered id except air, including invisible ones (the barrier): MCVOX
@@ -94,6 +95,7 @@ std::uint8_t cellTexel(CellState state)
 	switch (state)
 	{
 	case CellState::Shell:
+	case CellState::Backing:
 		return 120;
 	case CellState::Dug:
 		return 240;

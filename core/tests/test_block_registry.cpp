@@ -137,7 +137,7 @@ TEST(registry_find_after_many_adds)
 		t.name = "block_" + std::to_string(i);
 		r.add(t);
 	}
-	CHECK(r.find("block_0") == std::optional<vox::BlockId>(1));
-	CHECK(r.find("block_999") == std::optional<vox::BlockId>(1000));
+	CHECK(r.find("block_0") == std::optional<vox::BlockId>(vox::BlockId{1}));
+	CHECK(r.find("block_999") == std::optional<vox::BlockId>(vox::BlockId{1000}));
 	CHECK(!r.find("block_1000"));
 }

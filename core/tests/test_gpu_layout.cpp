@@ -244,7 +244,8 @@ TEST(gpu_cell_texel_classifies_under_shader_thresholds)
 
 TEST(gpu_cell_texel_unknown_state_is_open)
 {
-	CHECK_EQ(static_cast<int>(vox::cellTexel(static_cast<CellState>(3))), 0);
+	CHECK_EQ(static_cast<int>(vox::cellTexel(CellState::Backing)), 120);
+	CHECK_EQ(static_cast<int>(vox::cellTexel(static_cast<CellState>(4))), 0);
 	CHECK_EQ(static_cast<int>(vox::cellTexel(static_cast<CellState>(255))), 0);
 }
 

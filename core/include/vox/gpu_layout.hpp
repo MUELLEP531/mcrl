@@ -14,7 +14,7 @@ namespace vox {
 constexpr int kTypesWidth = 256;
 constexpr int kTypesHeight = 384;
 
-/// MCHOLES texel values (R8_UNORM) for each CellState: 0, 120 (~0.47), 240 (~0.94).
+/// MCHOLES texel values (R8_UNORM) for each CellState: Open 0, Shell and Backing 120 (~0.47), Dug 240 (~0.94).
 std::uint8_t cellTexel(CellState state);
 
 /// MCVOX: R16_UNORM, size.x wide and size.z * size.y high, row-major; block ids, with invisible blocks (and ids the
